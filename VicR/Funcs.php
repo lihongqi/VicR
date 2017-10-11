@@ -48,17 +48,17 @@ class Funcs
         return null;
     }
 
-    /**
-     * @param array $arr
-     * @return mixed|null
-     */
-    public static function return_true($arr)
-    {
-        foreach ($arr as $v) {
-            if ($v) {
-                return $v;
-            }
-        }
-        return null;
-    }
+//    /**
+//     * @param array $arr
+//     * @return mixed|null
+//     */
+//    public static function return_true($arr)
+//    {
+//        foreach ($arr as $v) {
+//            if ($v) {
+//                return $v;
+//            }
+//        }
+//        return null;
+//    }
 }

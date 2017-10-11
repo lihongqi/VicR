@@ -8,11 +8,11 @@
  */
 class Router
 {
-    public static $info = [];
+    private static $info = [];
 
-    public static $as_info = [];
+    private static $as_info = [];
 
-    public static $args = [];
+    private static $args = [];
 
     /**
      * @return mixed|null
@@ -54,6 +54,9 @@ class Router
                 if ($arr === null) {
                     return null;
                 }
+                if(is_string($arr)){
+                    break;
+                }
             }
             return $arr;
         } else {
@@ -90,16 +93,104 @@ class Router
         return null;
     }
 
-    public static function getExecInfo()
+    private static function getAction()
     {
         $info = self::matchRouter(self::$info, self::getKey());
-        if (is_array($info)) {
-            $info = Funcs::array_get_not_null($info, ['0', 'use']);
+        if(!$info){
+            throw new \Except\NoFind('no find file',404);
         }
-        if (is_array($info)) {
-            $info = Funcs::array_get($info, 'use');
+        if (is_array($info) && isset($info[0])) {
+            $info = $info[0];
         }
-        return $info;
+        $fm = [];
+        if (is_array($info)) {
+            $fm[] = $info;
+            if(isset($info['middle'])){
+                foreach ($info['middle'] as $v){
+                    $fm[] = $v;
+                }
+            }
+        }else{
+            $fm[] = $info;
+        }
+        return $fm;
+    }
+
+
+    /**
+     * 执行路由对应的方法
+     */
+    public static function exec()
+    {
+        $fm = self::getAction();
+        $r = [];
+        foreach ( $fm as $i => $v){
+            if($i > 0){
+                $r[] = function ($handler) use ($v){
+                    return function () use ($v,$handler){
+                        return self::call($v,[$handler]);
+                    };
+                };
+            }
+        }
+
+        $action = function () use ($fm){
+            $cache = null;
+            if (is_array($fm[0])){
+                $ac = $fm[0]['use'];
+                if(isset($fm[0]['cache'])){
+                    $cache = $fm[0]['cache'];
+                    $key = md5($ac).':'.implode(',',self::$args);
+                    if(!isset($cache['call'])){
+                        $res = Cache\File::get($key);
+                    }else{
+                        $res = self::call($cache['call'],[$key]);
+                    }
+                    if($res){
+                        return $res;
+                    }
+                }
+            }else{
+                $ac = $fm[0];
+            }
+            $res = self::call($ac,self::$args);
+            if ($cache){
+                if(isset($cache['call'])){
+                    self::call($cache['call'],[$key,$res,$cache['time']]);
+                }else{
+                    Cache\File::set($key,$res,$cache['time']);
+                }
+            }
+            return $res;
+        };
+
+        $run = self::runBox($action,$r);
+        echo $run();
+    }
+
+    /**
+     * @param string $fn
+     * @param array $args
+     * @return mixed
+     */
+    private static function call($fn,$args){
+        if(strpos($fn,'@') !== false){
+            $cl = explode('@',$fn);
+            return call_user_func_array([new $cl[0],$cl[1]],$args);
+        }else{
+            return call_user_func_array($fn,$args);
+        }
+    }
+
+    public static function getArgs(){
+        return self::$args;
+    }
+
+    private static function runBox($handler,$box){
+        foreach ($box as $fn){
+            $handler = $fn($handler);
+        }
+        return $handler;
     }
 
     private static $group_info = [];
@@ -128,7 +219,10 @@ class Router
                 $action['use'] = '\\' . $group_info['namespace'] . '\\' . trim($action['use'], '\\');
             }
             if (isset($group_info['middle'])) {
-                $action['middle'] = $group_info['middle'];
+                if(!isset($action['middle'])){
+                    $action['middle'] = [];
+                }
+                $action['middle'] = array_merge($action['middle'],array_reverse($group_info['middle']));
             }
             if (isset($group_info['cache'])) {
                 $action['cache'] = $group_info['cache'];
@@ -137,9 +231,9 @@ class Router
             if (isset($group_info['namespace'])) {
                 $action = '\\' . $group_info['namespace'] . '\\' . trim($action, '\\');
             }
+            $action = ['use' => $action,'middle' => []];
             if (isset($group_info['middle'])) {
-                $action = ['use' => $action];
-                $action['middle'] = $group_info['middle'];
+                $action['middle'] = array_merge($action['middle'],array_reverse($group_info['middle']));
             }
             if (isset($group_info['cache'])) {
                 $action['cache'] = $group_info['cache'];
