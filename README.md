@@ -7,7 +7,7 @@
 
 ## 路由 Router
 
-内置了restful 7个方法，可以支持任意方法，自己扩展就可以了。
+内置了restful 7个方法，可以支持任意方法，自己加一行代码就可以了。
 
 ### demo
 #### get put post delete patch head options
@@ -38,7 +38,7 @@ Router::get('/user/home',[
 Router::group(
 第一个参数数组 array(
 	'as' => '别名', //string
-	'middle' => ['App@csrf','App@filter'] //中间件
+	'middle' => ['App@csrf','App@filter'] //中间件回接接收到两个参数第一个 $next 匿名函数 ，第二个目标方法 目的是让中间件知道最终会由谁来执行这个请求 
 	'cache' => [
 		'time' => 60 //过期时间 单位秒
 		'call' => Closure 函数方法 自定义缓存方法（非必须） 调用时会带上（方法名称+请求参数）
