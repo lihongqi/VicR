@@ -14,14 +14,24 @@
 ### demo
 #### get put post delete patch head options
 ```php
-Router::get('/user','User@getSelf');
-//{id}匹配纯数字 会在赋到调用方法的参数里 或者可以通过 \Request::getArgs()获取
+Router::get('/user','User@xxx');
+
+//{id}匹配纯数字 会在赋到调用方法的参数里 或者可以通过 Router::$args 获取
 Router::get('/user/{id}','User@getUserInfo');
+
+// 路径/user/123 会执行这里 貌似fastroute不支持这种路由
+Router::get('/user/123','User@vip');
+
 //{xxx}通配符
 Router::get('/user/{name}','User@getUserInfoByName);
+
 //正则表达式匹配 ^\w{2,4}$
 Router::get('/user/`^\w{2,4}$`','User@getUserInfoByVipName');
-//第二个参数为数组情况 as 增加两个别名 home 调用 Funcs::url('home') 返回 /user/home ; middle 中间件
+
+//第二个参数为数组情况 。 
+//  as：增加个别名home ，调用 Funcs::url('home') 返回 /user/home ; 
+//  middle：中间件 ； 中间件数组 从左到右 从外到里(group可以包在多个路由外面) 依次执行，任何一个中间件阻断了 后面的就都不会被执行了（常用来权限认证，数据加解密，接口合并…… )
+//  cache：缓存 ，在缓存时间内不会执行User@getUserInfoByName直接返回上一次执行结果，会执行中间件。
 Router::get('/user/home',[
     'use' => 'User@getUserInfoByName',
     'as' => 'home',
