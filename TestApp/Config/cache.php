@@ -7,6 +7,6 @@
  */
 return [
     'file' => [
-        'path' => VIC_APP_PATH
+        'path' => VIC_APP_PATH.'/RunCache'
     ],
 ];

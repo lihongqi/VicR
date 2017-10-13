@@ -8,12 +8,3 @@
 define('VIC_CORE_PATH',__DIR__);
 require_once VIC_CORE_PATH.'/App.php';
 spl_autoload_register('App::autoLoad');
-
-App::Config('router');
-
-try{
-    Router::exec();
-}catch (Exception $e){
-    echo $e->getMessage();
-}
-

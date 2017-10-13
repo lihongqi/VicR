@@ -6,6 +6,16 @@
  * Time: 下午5:45
  */
 define('VIC_APP_PATH',__DIR__);
-require_once __DIR__ . '/../VicR/VicR.php';
+require_once VIC_APP_PATH . '/../VicR/VicR.php';
+
+App::$start_time = microtime(true);
+
+App::loadRouter();
+
+try{
+    Router::exec();
+}catch (Exception $e){
+    echo $e->getMessage();
+}
 
 

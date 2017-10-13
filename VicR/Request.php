@@ -14,6 +14,6 @@ class Request
      * @return array
      */
     public static function getArgs(){
-        return Router::getArgs();
+        return Router::$args;
     }
 }

@@ -8,11 +8,11 @@
  */
 class Router
 {
-    private static $info = [];
+    public static $info = [];
 
-    private static $as_info = [];
+    public static $as_info = [];
 
-    private static $args = [];
+    public static $args = [];
 
     /**
      * @return mixed|null
@@ -97,7 +97,7 @@ class Router
     {
         $info = self::matchRouter(self::$info, self::getKey());
         if(!$info){
-            throw new \Except\NoFind('no find file',404);
+            throw new \Except\NoFind('Not Found');
         }
         if (is_array($info) && isset($info[0])) {
             $info = $info[0];
@@ -123,12 +123,13 @@ class Router
     public static function exec()
     {
         $fm = self::getAction();
+        $act = is_array($fm[0]) ? $fm[0]['use'] : $fm[0];
         $r = [];
         foreach ( $fm as $i => $v){
             if($i > 0){
-                $r[] = function ($handler) use ($v){
-                    return function () use ($v,$handler){
-                        return self::call($v,[$handler]);
+                $r[] = function ($handler) use ($v,$act){
+                    return function () use ($v,$act,$handler){
+                        return self::call($v,[$handler,$act]);
                     };
                 };
             }
@@ -140,7 +141,7 @@ class Router
                 $ac = $fm[0]['use'];
                 if(isset($fm[0]['cache'])){
                     $cache = $fm[0]['cache'];
-                    $key = md5($ac).':'.implode(',',self::$args);
+                    $key = md5($ac.':'.implode(',',self::$args));
                     if(!isset($cache['call'])){
                         $res = Cache\File::get($key);
                     }else{
@@ -260,7 +261,7 @@ class Router
             $path = self::withGroupPath($value, $path);
         }
         if (is_array($action)) {
-            self::setAsInfo($path, $action);
+            self::createAsInfo($path, $action);
         }
         $arr = explode('/', $method . $path);
         self::$info = array_merge_recursive(self::$info, self::setPath($arr, $action));
@@ -270,7 +271,7 @@ class Router
      * @param $path
      * @param array $action
      */
-    private static function setAsInfo($path, $action)
+    private static function createAsInfo($path, $action)
     {
         if (isset($action['as'])) {
             self::$as_info[$action['as']] = $path;
@@ -295,7 +296,7 @@ class Router
      * @param string $path
      * @param string $controller
      */
-    public static function resource($path, $controller)
+    public static function controller($path, $controller)
     {
         self::get($path, $controller . '@' . 'getAction');
         self::post($path, $controller . '@' . 'postAction');

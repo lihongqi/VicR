@@ -8,6 +8,9 @@
  */
 class App
 {
+
+    public static $start_time = 0;
+
     private static $config = [];
 
     /**
@@ -24,6 +27,21 @@ class App
             return require_once(VIC_CORE_PATH . '/' . $path . '.php');
         } else {
             exit('没有找到文件:' . $path);
+        }
+    }
+
+    public static function loadRouter(){
+        $key = md5(__FILE__);
+        $time = filemtime(VIC_APP_PATH.'/Config/router.php');
+        $info  = Cache\File::get($key.$time);
+        if($info){
+            Router::$info  = $info;
+            Router::$as_info = Cache\File::get('router_as'.$time);
+        }else{
+            self::Config('router');
+            Cache\File::del($key.'*');
+            Cache\File::set($key.$time,Router::$info,36000000);
+            Cache\File::set($key.'_as'.$time,Router::$as_info,36000000);
         }
     }
 
