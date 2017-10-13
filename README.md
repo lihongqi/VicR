@@ -49,7 +49,11 @@ Router::group(
 	'prefix' => '请求url的前缀'
 )
 ,
-第二参数执行方法 执行方法里面可以继续调用 Router::group
+function(){
+    Router::get('/name','User@name');
+    
+    Router::group(,)
+}
 );
 ```
 
