@@ -7,7 +7,7 @@
  */
 
 Router::get('/name','\Controller\\Test@name');
-Router::get('/name/{id}','\Controller\\Test@hello');
+Router::get('/name/{name}','\Controller\\Test@name');
 Router::get('/articles/{id}/{title}','\Controller\\Test@topic');
 
 for ($i=0; $i < 1000 ; $i++) {

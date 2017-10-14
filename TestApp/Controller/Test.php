@@ -10,6 +10,8 @@ namespace Controller;
 
 
 use Cache\File;
+use Model\KeyVal;
+use Model\Tag;
 
 class Test
 {
@@ -18,38 +20,78 @@ class Test
         return 'hello ' . $name."\n";
     }
 
-    public function name()
+    public function name($id = 1)
     {
-        $key = 'abcde';
-        echo __METHOD__;
+
+        $res = Tag::find([
+            'id' => $id,
+            'name' => \Router::$paths[3]
+        ]);
+        var_dump($res);
+        echo '<hr>';
+        $res = Tag::findAll([
+            'order' => 'id asc',
+            'limit' => '5,10'
+        ]);
+        var_dump($res);
+        echo '<hr>';
+        $res = Tag::update([
+            'where' => [
+                'id' => 12
+            ],
+            'data' => [
+                'name' => 'update 12'
+            ]
+        ]);
+        var_dump($res);
+        echo '<hr>';
+        $res = Tag::delete([
+            'id' => 15
+        ]);
+        var_dump($res);
+        echo '<hr>';
+        $res = KeyVal::insert([
+            'k' => 'aa'.rand(1,1000),
+            'v' => 'v\'v'.time()
+        ]);
+        var_dump($res);
+        echo '<hr>';
+        $res = KeyVal::insert([
+            ['k' => 'kss1'.rand(1,1000),'v' => 'vss1'.time()],
+            ['k' => 'kss2'.rand(1,1000),'v' => 'vss2'.time()],
+            ['k' => 'kss3'.rand(1,1000),'v' => 'vss3'.time()],
+            ['k' => 'kss4'.rand(1,1000),'v' => 'vss4'.time()],
+            ['k' => 'kss5'.rand(1,1000),'v' => 'vss5'.time()],
+        ]);
+        var_dump($res);
+        echo '<hr>';
+        $res = KeyVal::findAll(['limit' => '6,100']);
+        var_dump($res);
+        echo '<hr>';
+
+
+//        $res = Tag::update([
+//            'where' => [
+//                'id' => 12
+//            ],
+//            'data' => [
+//                'name' => 'update 12'
+//            ]
+//        ]);
+//        var_dump($res);
+//        echo '<hr>';
+
+
+
     }
 
-    public function hellos($name)
-    {
-        return 'hellos .. ' . $name."\n";
-    }
 
     public function helloAbc($name){
         echo __METHOD__."\n";
         return 'hello ' . $name;
     }
 
-    public function xss($next,$cl)
-    {
-        echo __METHOD__." exec {$cl} \n";
-        return $next();
-    }
 
-    public static function xss2($next)
-    {
-        $args = \Router::$args;
-        if(isset($args[0]) && $args[0] > 5){
-            return 'id  不能大于 5'."\n";
-        }else{
-            echo __METHOD__."\n";
-            return $next();
-        }
-    }
 
     public function csrf($next)
     {
@@ -57,16 +99,4 @@ class Test
         return $next();
     }
 
-    public function topic($id)
-    {
-        echo __METHOD__."\n";
-        return '不能大于 id =  '.$id."\n";
-    }
-
-    public function getList()
-    {
-        echo "\n".(microtime(true) - \App::$start_time) * 1000 ."\n";
-        echo __METHOD__."\n";
-        return '哈哈哈 is getList '."\n";
-    }
 }

@@ -11,7 +11,7 @@ namespace Except;
 
 use Exception;
 
-class NoFind extends \Exception
+class NotFind extends \Exception
 {
     public function __construct($message = "", $code = 0, Exception $previous = null)
     {

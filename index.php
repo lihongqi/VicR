@@ -6,4 +6,3 @@
  * Time: 下午5:45
  */
 require_once __DIR__ . '/TestApp/index.php';
-echo (microtime(true) - App::$start_time) ."\n";

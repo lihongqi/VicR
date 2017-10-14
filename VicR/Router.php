@@ -14,12 +14,18 @@ class Router
 
     public static $args = [];
 
+    public static $paths = [];
+
     /**
-     * @return mixed|null
+     * @return array
      */
     private static function getPath()
     {
-        return urldecode(Funcs::array_get_not_null($_SERVER, ['REQUEST_URI', 'argv.1']));
+        $path = urldecode(Funcs::array_get_not_null($_SERVER, ['REQUEST_URI', 'argv.1']));
+        $paths = explode('?', $path);
+        $path = '/' . trim($paths[0], '/');
+        self::$paths = explode('/', $path);
+        return self::$paths;
     }
 
     /**
@@ -27,18 +33,15 @@ class Router
      */
     private static function getKey()
     {
-        $method = strtolower($_SERVER['REQUEST_METHOD']);
-        $path = self::getPath();
-        $paths = explode('?', $path);
-        $path = '/' . trim($paths[0], '/');
-        $paths = explode('/', $path);
+        $method = Request::requestMethod();
+        $paths = self::getPath();
         foreach ($paths as $i => $v) {
             if (is_numeric($v)) {
                 $paths[$i] = '#' . $v;
             }
         }
         $path = implode('.', $paths);
-        if ($path === '') {
+        if ($path === '' || $path === '.') {
             $path = 0;
         }
         $path = trim($method . $path, '.');
@@ -54,7 +57,7 @@ class Router
                 if ($arr === null) {
                     return null;
                 }
-                if(is_string($arr)){
+                if (is_string($arr)) {
                     break;
                 }
             }
@@ -74,9 +77,12 @@ class Router
         foreach ($keys as $key) {
             $s = substr($key, 0, 1);
             if ($s == '{') {
+                if (substr($v, 0, 1) == '#') {
+                    $v = substr($v, 1);
+                }
                 if (substr($key, 1, 2) == 'id') { //  match {id} only is numeric
-                    if (substr($v, 0, 1) == '#') {
-                        self::$args[] = substr($v, 1);
+                    if(is_numeric($v)){
+                        self::$args[] = $v;
                         return $arr[$key];
                     }
                 } else {
@@ -96,8 +102,8 @@ class Router
     private static function getAction()
     {
         $info = self::matchRouter(self::$info, self::getKey());
-        if(!$info){
-            throw new \Except\NoFind('Not Found');
+        if (!$info) {
+            throw new \Except\NotFind('Not Found');
         }
         if (is_array($info) && isset($info[0])) {
             $info = $info[0];
@@ -105,12 +111,12 @@ class Router
         $fm = [];
         if (is_array($info)) {
             $fm[] = $info;
-            if(isset($info['middle'])){
-                foreach ($info['middle'] as $v){
+            if (isset($info['middle'])) {
+                foreach ($info['middle'] as $v) {
                     $fm[] = $v;
                 }
             }
-        }else{
+        } else {
             $fm[] = $info;
         }
         return $fm;
@@ -125,47 +131,47 @@ class Router
         $fm = self::getAction();
         $act = is_array($fm[0]) ? $fm[0]['use'] : $fm[0];
         $r = [];
-        foreach ( $fm as $i => $v){
-            if($i > 0){
-                $r[] = function ($handler) use ($v,$act){
-                    return function () use ($v,$act,$handler){
-                        return self::call($v,[$handler,$act]);
+        foreach ($fm as $i => $v) {
+            if ($i > 0) {
+                $r[] = function ($handler) use ($v, $act) {
+                    return function () use ($v, $act, $handler) {
+                        return self::call($v, [$handler, $act]);
                     };
                 };
             }
         }
 
-        $action = function () use ($fm){
+        $action = function () use ($fm) {
             $cache = null;
-            if (is_array($fm[0])){
+            if (is_array($fm[0])) {
                 $ac = $fm[0]['use'];
-                if(isset($fm[0]['cache'])){
+                if (isset($fm[0]['cache'])) {
                     $cache = $fm[0]['cache'];
-                    $key = md5($ac.':'.implode(',',self::$args));
-                    if(!isset($cache['call'])){
+                    $key = md5($ac . ':' . implode(',', self::$args));
+                    if (!isset($cache['call'])) {
                         $res = Cache\File::get($key);
-                    }else{
-                        $res = self::call($cache['call'],[$key]);
+                    } else {
+                        $res = self::call($cache['call'], [$key]);
                     }
-                    if($res){
+                    if ($res) {
                         return $res;
                     }
                 }
-            }else{
+            } else {
                 $ac = $fm[0];
             }
-            $res = self::call($ac,self::$args);
-            if ($cache){
-                if(isset($cache['call'])){
-                    self::call($cache['call'],[$key,$res,$cache['time']]);
-                }else{
-                    Cache\File::set($key,$res,$cache['time']);
+            $res = self::call($ac, self::$args);
+            if ($cache) {
+                if (isset($cache['call'])) {
+                    self::call($cache['call'], [$key, $res, $cache['time']]);
+                } else {
+                    Cache\File::set($key, $res, $cache['time']);
                 }
             }
             return $res;
         };
 
-        $run = self::runBox($action,$r);
+        $run = self::runBox($action, $r);
         echo $run();
     }
 
@@ -174,21 +180,19 @@ class Router
      * @param array $args
      * @return mixed
      */
-    private static function call($fn,$args){
-        if(strpos($fn,'@') !== false){
-            $cl = explode('@',$fn);
-            return call_user_func_array([new $cl[0],$cl[1]],$args);
-        }else{
-            return call_user_func_array($fn,$args);
+    private static function call($fn, $args)
+    {
+        if (strpos($fn, '@') !== false) {
+            $cl = explode('@', $fn);
+            return call_user_func_array([new $cl[0], $cl[1]], $args);
+        } else {
+            return call_user_func_array($fn, $args);
         }
     }
 
-    public static function getArgs(){
-        return self::$args;
-    }
-
-    private static function runBox($handler,$box){
-        foreach ($box as $fn){
+    private static function runBox($handler, $box)
+    {
+        foreach ($box as $fn) {
             $handler = $fn($handler);
         }
         return $handler;
@@ -220,10 +224,10 @@ class Router
                 $action['use'] = '\\' . $group_info['namespace'] . '\\' . trim($action['use'], '\\');
             }
             if (isset($group_info['middle'])) {
-                if(!isset($action['middle'])){
+                if (!isset($action['middle'])) {
                     $action['middle'] = [];
                 }
-                $action['middle'] = array_merge($action['middle'],array_reverse($group_info['middle']));
+                $action['middle'] = array_merge($action['middle'], array_reverse($group_info['middle']));
             }
             if (isset($group_info['cache'])) {
                 $action['cache'] = $group_info['cache'];
@@ -232,9 +236,9 @@ class Router
             if (isset($group_info['namespace'])) {
                 $action = '\\' . $group_info['namespace'] . '\\' . trim($action, '\\');
             }
-            $action = ['use' => $action,'middle' => []];
+            $action = ['use' => $action, 'middle' => []];
             if (isset($group_info['middle'])) {
-                $action['middle'] = array_merge($action['middle'],array_reverse($group_info['middle']));
+                $action['middle'] = array_merge($action['middle'], array_reverse($group_info['middle']));
             }
             if (isset($group_info['cache'])) {
                 $action['cache'] = $group_info['cache'];

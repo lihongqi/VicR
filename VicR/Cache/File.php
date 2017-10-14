@@ -17,7 +17,7 @@ class File
         if(self::$path){
             return self::$path;
         }
-        self::$path = \App::Config('cache.file.path').'/';
+        self::$path = \App::config('Cache.file.path').'/';
         return self::$path;
     }
 

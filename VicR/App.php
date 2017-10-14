@@ -38,7 +38,7 @@ class App
             Router::$info  = $info;
             Router::$as_info = Cache\File::get('router_as'.$time);
         }else{
-            self::Config('router');
+            self::config('Router');
             Cache\File::del($key.'*');
             Cache\File::set($key.$time,Router::$info,36000000);
             Cache\File::set($key.'_as'.$time,Router::$as_info,36000000);
@@ -50,7 +50,7 @@ class App
      * @param $path
      * @return mixed
      */
-    public static function Config($path)
+    public static function config($path)
     {
         if (!isset(self::$config[$path])) {
             $p = strpos($path, '.');
