@@ -14,4 +14,16 @@ use Drm\Base;
 class Tag extends Base
 {
     public static $table = 'd_tag';
+
+    public static function getList($id)
+    {
+        self::where('id', '>', $id);
+        return self::findAll([
+            'where' => [
+                ['id' => 12],
+                ['id' => 5],
+                ['id' => 16],
+            ]
+        ]);
+    }
 }

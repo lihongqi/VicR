@@ -56,18 +56,22 @@ class Test
         ]);
         var_dump($res);
         echo '<hr>';
-        $res = KeyVal::insert([
-            ['k' => 'kss1'.rand(1,1000),'v' => 'vss1'.time()],
-            ['k' => 'kss2'.rand(1,1000),'v' => 'vss2'.time()],
-            ['k' => 'kss3'.rand(1,1000),'v' => 'vss3'.time()],
-            ['k' => 'kss4'.rand(1,1000),'v' => 'vss4'.time()],
-            ['k' => 'kss5'.rand(1,1000),'v' => 'vss5'.time()],
-        ]);
+        $res = Tag::getList(5);
         var_dump($res);
         echo '<hr>';
-        $res = KeyVal::findAll(['limit' => '6,100']);
-        var_dump($res);
-        echo '<hr>';
+////        $res = KeyVal::insert([
+////            ['k' => 'kss1'.rand(1,1000),'v' => 'vss1'.time()],
+////            ['k' => 'kss2'.rand(1,1000),'v' => 'vss2'.time()],
+////            ['k' => 'kss3'.rand(1,1000),'v' => 'vss3'.time()],
+////            ['k' => 'kss4'.rand(1,1000),'v' => 'vss4'.time()],
+////            ['k' => 'kss5'.rand(1,1000),'v' => 'vss5'.time()],
+////        ]);
+//        var_dump($res);
+//        echo '<hr>';
+//        $res = KeyVal::findAll(['limit' => '6,100']);
+//        var_dump($res);
+//        echo '<hr>';
+
 
 
 //        $res = Tag::update([

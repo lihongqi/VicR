@@ -7,7 +7,7 @@
  * Time: 下午3:18
  */
 
-namespace  Drm;
+namespace Drm;
 
 class Db
 {
@@ -126,7 +126,6 @@ class Db
      */
     public function exec($sql, $arr = [])
     {
-        $this->_sql($sql, 2);
         return $this->rowCount($this->execute($sql, $arr));
     }
 
@@ -138,9 +137,9 @@ class Db
      */
     private function execute($sql, $arr = [])
     {
-        \Log::debug([$sql,$arr],3);
+        \Log::debug([$sql, $arr], 3);
         if ($arr) {
-            $this->sql_data = [];
+            $this->sql_data = $this->whs = [];
             if (!isset($arr[0])) {
                 $ops = [\PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL];
             } else {
@@ -240,7 +239,7 @@ class Db
     private function _sql($data, $d = 0)
     {
         if (is_string($data)) {
-            $this->sql_info = [$data,[]];
+            $this->sql_info = [$data, []];
             return true;
         }
         $data = $data + $this->getOps();
@@ -258,7 +257,7 @@ class Db
         } elseif ($d == 2) {
             $sql = 'UPDATE ' . $data['table'] . ' SET ' . $this->_data($data['data']) . $this->_where($data['where']);
         } elseif ($d == 3) {
-            list($key,$val) = $this->_dataInsert($data['data']);
+            list($key, $val) = $this->_dataInsert($data['data']);
             $sql = 'INSERT INTO' . $data['table'] . $key . ' VALUES ' . $val;
         }
         $this->sql_info = [$sql, $this->sql_data];
@@ -289,8 +288,37 @@ class Db
      */
     private function _where($data)
     {
-        $where = $this->_data($data, ' AND ');
-        return $where ? ' WHERE ' . $where : '';
+        if (isset($data[0])) {
+            $ws = [];
+            foreach ($data as $w) {
+                $ws[] = $this->_data($w, ' AND ');
+            }
+            $where = '(' . implode(' OR ', $ws) . ')';
+        } else {
+            $where = $this->_data($data, ' AND ');
+        }
+        $whs = implode(' AND ', $this->whs);
+        if ($whs && $where) {
+            return ' WHERE ' . $whs . ' AND ' . $where;
+        } else if ($whs || $where) {
+            return ' WHERE ' . $whs . $where;
+        }
+        return '';
+    }
+
+    private $whs = [];
+
+    /**
+     * @param string $field
+     * @param string $sign
+     * @param string $val
+     * @return $this
+     */
+    public function where($field, $sign, $val)
+    {
+        $this->sql_data[] = $val;
+        $this->whs = array_merge($this->whs, [$field . ' ' . $sign . ' ' . '?']);
+        return $this;
     }
 
     private function _order($str)
@@ -320,25 +348,26 @@ class Db
         return $s;
     }
 
-    private function _dataInsert($data){
+    private function _dataInsert($data)
+    {
         $key = [];
         $val = [];
         $arr = [];
         $_k = '';
         foreach ($data as $k => $v) {
-            if(is_array($v)){
-                list($_k,$_v) = $this->_dataInsert($v);
+            if (is_array($v)) {
+                list($_k, $_v) = $this->_dataInsert($v);
                 $arr[] = $_v;
-            }else{
+            } else {
                 $key[] = "`{$k}`";
                 $val[] = '?';
             }
         }
-        if($arr){
-            return [$_k,implode(',',$arr)];
-        }else{
-            $this->sql_data = array_merge($this->sql_data,array_values($data));
-            return ['('.implode(',',$key).')','('.implode(',',$val).')'];
+        if ($arr) {
+            return [$_k, implode(',', $arr)];
+        } else {
+            $this->sql_data = array_merge($this->sql_data, array_values($data));
+            return ['(' . implode(',', $key) . ')', '(' . implode(',', $val) . ')'];
         }
     }
 
@@ -348,7 +377,7 @@ class Db
         foreach ($data as $k => $v) {
             $rr[] = "{$k} = ?";
         }
-        $this->sql_data = array_merge($this->sql_data,array_values($data));
+        $this->sql_data = array_merge($this->sql_data, array_values($data));
         return implode($p, $rr);
     }
 
@@ -363,8 +392,8 @@ class Db
             return $dbs[$key];
         } else {
             $ot = self::createPDO($key);
-            $dns[$key] = $ot;
-            return $dns[$key];
+            $dbs[$key] = $ot;
+            return $dbs[$key];
         }
     }
 
