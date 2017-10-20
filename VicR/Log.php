@@ -70,7 +70,7 @@ class Log
 
         $code = self::$levels[$code];
 
-        $str = $code . '|' . date('Y-m-d H:i:s') . '|' . Request::requestId() . '|' . $name . ':' . $line . '|' . $data . "\n";
+        $str = $code . '|' . date('Y-m-d H:i:s') . '|' . Request::id() . '|' . $name . ':' . $line . '|' . $data . "\n";
         error_log($str, 3, $path);
 
     }

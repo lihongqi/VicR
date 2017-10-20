@@ -12,16 +12,39 @@ class Request
     /**
      * @return string|null
      */
-    public static function getIp()
+    public static function ip()
     {
         return Funcs::array_get_not_null($_SERVER, ['REMOTE_ADDR', 'HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR']);
+    }
+
+
+    /**
+     * @param $name
+     * @return mixed|null
+     */
+    public static function server($name){
+        return Funcs::array_get($_SERVER, $name);
+    }
+
+    /**
+     * @return mixed|null
+     */
+    public static function userAgent(){
+        return self::server('USER_AGENT');
+    }
+
+    /**
+     * @return string
+     */
+    public static function uri(){
+        return '/'.implode('/',Router::$paths);
     }
 
     /**
      * request unique id
      * @return string
      */
-    public static function requestId()
+    public static function id()
     {
         static $id = null;
         if (!$id) {
@@ -90,9 +113,9 @@ class Request
     /**
      * @return string
      */
-    public static function requestMethod()
+    public static function method()
     {
-        return strtolower(Funcs::array_get($_SERVER, 'REQUEST_METHOD'));
+        return strtolower(self::server('REQUEST_METHOD'));
     }
 
 }

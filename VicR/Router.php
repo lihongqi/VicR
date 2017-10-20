@@ -33,7 +33,7 @@ class Router
      */
     private static function getKey()
     {
-        $method = Request::requestMethod();
+        $method = Request::method();
         $paths = self::getPath();
         foreach ($paths as $i => $v) {
             if (is_numeric($v)) {
