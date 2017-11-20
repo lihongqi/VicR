@@ -32,18 +32,20 @@ class App
 
     public static function loadRouter(){
         $key = md5(__FILE__);
-        $time = filemtime(VIC_APP_PATH.'/Config/router.php');
+        $time = filemtime(VIC_APP_PATH.'/Config/Router.php');
         $info  = Cache\File::get($key.$time);
-        if($info){
+        if($info && false){
             Router::$info  = $info;
-            Router::$as_info = Cache\File::get('router_as'.$time);
+            Router::$as_info = Cache\File::get($key.'_as'.$time);
         }else{
             self::config('Router');
             Cache\File::del($key.'*');
-            Cache\File::set($key.$time,Router::$info,36000000);
-            Cache\File::set($key.'_as'.$time,Router::$as_info,36000000);
+            Cache\File::set($key.$time,Router::$info,320000000);
+            Cache\File::set($key.'_as'.$time,Router::$as_info,320000000);
         }
     }
+
+
 
     /**
      * 加载配置
@@ -52,17 +54,36 @@ class App
      */
     public static function config($path)
     {
-        if (!isset(self::$config[$path])) {
+        $res = Funcs::array_get(self::$config, $path);
+        if (!$res) {
             $p = strpos($path, '.');
             if ($p !== false) {
-                $arr = require(VIC_APP_PATH . '/Config/' . substr($path, 0, $p) . '.php');
-                self::$config[$path] = Funcs::array_get($arr, substr($path, $p + 1));
+                $name = substr($path, 0, $p);
+                self::$config[$name] = require(VIC_APP_PATH . '/Config/' . $name . '.php');
             } else {
                 self::$config[$path] = require(VIC_APP_PATH . '/Config/' . $path . '.php');
             }
+            $res = Funcs::array_get(self::$config, $path);
         }
-        return self::$config[$path];
+        return $res;
     }
+
+
+    /**
+     * @param string $fn
+     * @param array $args
+     * @return mixed
+     */
+    public static function call($fn, $args)
+    {
+        if (strpos($fn, '@') !== false) {
+            $cl = explode('@', $fn);
+            return call_user_func_array([new $cl[0], $cl[1]], $args);
+        } else {
+            return call_user_func_array($fn, $args);
+        }
+    }
+
 
 
 }

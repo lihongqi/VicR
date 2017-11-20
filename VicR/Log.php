@@ -61,8 +61,9 @@ class Log
         if (is_string($data)) {
             $data = str_replace("\n", ' ', $data);
         } else {
-            $data = json_encode($data, JSON_UNESCAPED_UNICODE);
+            $data = json_encode($data,JSON_UNESCAPED_UNICODE);
         }
+
 
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 12);
         $name = $trace[$k]['file'];

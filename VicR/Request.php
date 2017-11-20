@@ -30,14 +30,14 @@ class Request
      * @return mixed|null
      */
     public static function userAgent(){
-        return self::server('USER_AGENT');
+        return self::server('HTTP_USER_AGENT');
     }
 
     /**
      * @return string
      */
     public static function uri(){
-        return '/'.implode('/',Router::$paths);
+        return Router::$uri;
     }
 
     /**
@@ -48,18 +48,23 @@ class Request
     {
         static $id = null;
         if (!$id) {
-            $id = uniqid();
+            $id = Funcs::uuid();
         }
         return $id;
     }
 
     /**
      * @param $key
+     * @param $default
      * @return mixed|null
      */
-    public static function get($key)
+    public static function get($key,$default = null)
     {
-        return Funcs::array_get($_GET, $key);
+        $r = Funcs::array_get($_GET, $key);
+        if(!$r){
+            $r = $default;
+        }
+        return $r;
     }
 
     /**
@@ -69,6 +74,15 @@ class Request
     public static function post($key)
     {
         return Funcs::array_get($_POST, $key);
+    }
+
+    /**
+     * @param $key
+     * @return mixed|null
+     */
+    public static function res($key)
+    {
+        return Funcs::array_get($_REQUEST, $key);
     }
 
 
@@ -87,6 +101,13 @@ class Request
     public static function input()
     {
         return file_get_contents('php://input');
+    }
+
+    /**
+     * @return array
+     */
+    public static function json(){
+        return json_decode(self::input(),true);
     }
 
     /**
@@ -117,5 +138,17 @@ class Request
     {
         return strtolower(self::server('REQUEST_METHOD'));
     }
+
+    /**
+     * @return bool
+     */
+    public static function isAjax(){
+        if(self::server('HTTP_X_REQUESTED_WITH')){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
 
 }

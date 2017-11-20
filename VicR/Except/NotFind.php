@@ -17,5 +17,10 @@ class NotFind extends \Exception
     {
         parent::__construct($message, $code, $previous);
         header("HTTP/1.0 404 Not Found");
+        if(\Request::isAjax()){
+            echo json_encode(['err' => 404,'msg' => 'Not Found']);
+        }else{
+            echo 'Not Found';
+        }
     }
 }

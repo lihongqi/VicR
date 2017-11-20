@@ -16,6 +16,8 @@ class Router
 
     public static $paths = [];
 
+    public static $uri = '';
+
     /**
      * @return array
      */
@@ -23,8 +25,8 @@ class Router
     {
         $path = urldecode(Funcs::array_get_not_null($_SERVER, ['REQUEST_URI', 'argv.1']));
         $paths = explode('?', $path);
-        $path = '/' . trim($paths[0], '/');
-        self::$paths = explode('/', $path);
+        self::$uri = '/' . trim($paths[0], '/');
+        self::$paths = explode('/', self::$uri);
         return self::$paths;
     }
 
@@ -42,9 +44,10 @@ class Router
         }
         $path = implode('.', $paths);
         if ($path === '' || $path === '.') {
-            $path = 0;
+            $path = '';
         }
-        $path = trim($method . $path, '.');
+        $path = trim($path,'.');
+        $path = trim($method .'.'. $path, '.');
         return $path;
     }
 
@@ -57,7 +60,7 @@ class Router
                 if ($arr === null) {
                     return null;
                 }
-                if (is_string($arr)) {
+                if (is_string($arr) || (count($arr) == 1 && isset($arr[0]))) {
                     break;
                 }
             }
@@ -105,8 +108,12 @@ class Router
         if (!$info) {
             throw new \Except\NotFind('Not Found');
         }
-        if (is_array($info) && isset($info[0])) {
-            $info = $info[0];
+        if (is_array($info)) {
+            if(isset($info[0])){
+                $info = $info[0];
+            }else{
+                throw new \Except\NotFind('Not Found');
+            }
         }
         $fm = [];
         if (is_array($info)) {
@@ -135,7 +142,7 @@ class Router
             if ($i > 0) {
                 $r[] = function ($handler) use ($v, $act) {
                     return function () use ($v, $act, $handler) {
-                        return self::call($v, [$handler, $act]);
+                        return App::call($v, [$handler, $act]);
                     };
                 };
             }
@@ -151,7 +158,7 @@ class Router
                     if (!isset($cache['call'])) {
                         $res = Cache\File::get($key);
                     } else {
-                        $res = self::call($cache['call'], [$key]);
+                        $res = App::call($cache['call'], [$key]);
                     }
                     if ($res) {
                         return $res;
@@ -160,10 +167,10 @@ class Router
             } else {
                 $ac = $fm[0];
             }
-            $res = self::call($ac, self::$args);
+            $res = App::call($ac, self::$args);
             if ($cache) {
                 if (isset($cache['call'])) {
-                    self::call($cache['call'], [$key, $res, $cache['time']]);
+                    App::call($cache['call'], [$key, $res, $cache['time']]);
                 } else {
                     Cache\File::set($key, $res, $cache['time']);
                 }
@@ -175,20 +182,6 @@ class Router
         echo $run();
     }
 
-    /**
-     * @param string $fn
-     * @param array $args
-     * @return mixed
-     */
-    private static function call($fn, $args)
-    {
-        if (strpos($fn, '@') !== false) {
-            $cl = explode('@', $fn);
-            return call_user_func_array([new $cl[0], $cl[1]], $args);
-        } else {
-            return call_user_func_array($fn, $args);
-        }
-    }
 
     private static function runBox($handler, $box)
     {
@@ -202,7 +195,7 @@ class Router
     private static $max_group_depth = 200;
 
     /**
-     * @param array $rule
+     * @param array $rule ['prefix' => '','namespace'=>'','cache'=>['time'=>1,'call'=>''],'middle'=>[]]
      * @param \Closure $route
      */
     public static function group($rule, $route)
@@ -268,8 +261,15 @@ class Router
             self::createAsInfo($path, $action);
         }
         $arr = explode('/', $method . $path);
+        if(is_array($action)){
+            $v = end($arr);
+            if($v !== ''){
+                $arr[] = '';
+            }
+        }
         self::$info = array_merge_recursive(self::$info, self::setPath($arr, $action));
     }
+
 
     /**
      * @param $path
@@ -309,6 +309,15 @@ class Router
         self::patch($path, $controller . '@' . 'patchAction');
         self::head($path, $controller . '@' . 'headAction');
         self::options($path, $controller . '@' . 'optionsAction');
+    }
+
+    /**
+     * @param string $path
+     * @param string|array $action
+     */
+    public static function shell($path, $action)
+    {
+        self::set('shell', $path, $action);
     }
 
     /**

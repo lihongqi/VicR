@@ -9,6 +9,8 @@
 
 namespace Drm;
 
+use Cache\File;
+
 class Db
 {
     private $pdo = null;
@@ -18,6 +20,8 @@ class Db
     private $sql_info = [];
 
     private $sql_data = [];
+
+    private $max_connect_time = 600;
 
     private function __construct()
     {
@@ -137,7 +141,7 @@ class Db
      */
     private function execute($sql, $arr = [])
     {
-        \Log::debug([$sql, $arr], 3);
+        \Log::debug([$sql, $arr], 4);
         if ($arr) {
             $this->sql_data = $this->whs = [];
             if (!isset($arr[0])) {
@@ -388,18 +392,23 @@ class Db
     public static function init($key = 'default')
     {
         static $dbs = [];
+
         if (isset($dbs[$key])) {
-            return $dbs[$key];
-        } else {
-            $ot = self::createPDO($key);
-            $dbs[$key] = $ot;
-            return $dbs[$key];
+            if($dbs[$key]->start_time + $dbs[$key]->max_connect_time > time()){
+                return $dbs[$key];
+            }else{
+                unset($dbs[$key]);
+            }
         }
+
+        $ot = self::createPDO($key);
+        $dbs[$key] = $ot;
+        return $dbs[$key];
     }
 
     /**
      * @param string $key
-     * @return DB
+     * @return Db
      * @throws \Except\DbError
      */
     private static function createPdo($key)
@@ -415,9 +424,54 @@ class Db
         }
         $ot = new self;
         $ot->pdo = $db;
-        $ot->start_time = microtime(true);
+        $ot->start_time = time();
         return $ot;
     }
 
+    /**
+     * 生成表结构缓存
+     */
+    private function createDbFieldCache(){
+        $db = self::init();
+        $tables = $db->findAll('show tables');
+        $rr = [];
+        foreach($tables as $v){
+            $table = end($v);
+            $res =  $db->findAll("desc $table");
+            $fr = array();
+            foreach($res as $fv){
+                $pos = strpos($fv['Type'],'(');
+                if(!$pos){
+                    $pos = strpos($fv['Type'],' ');
+                }
+                if($pos){
+                    $type = substr($fv['Type'],0,$pos);
+                }else{
+                    $type = $fv['Type'];
+                }
+                $fr[$fv['Field']] = $type;
+            }
+            $rr[$table]=$fr;
+        }
+        return $rr;
+    }
+
+    private static $fields = [];
+
+    /**
+     * @return array
+     */
+    public function getDbField($fresh_cache = false){
+        if(!self::$fields){
+            $res = \Cache\File::get('db_field');
+            if($res == false || $fresh_cache == true){
+                $res = $this->createDbFieldCache();
+                File::set('db_field',$res,36000);
+            }
+            self::$fields = $res;
+        }
+        return self::$fields;
+
+    }
 
 }

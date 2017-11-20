@@ -11,7 +11,7 @@ namespace Drm;
 
 class Base
 {
-    public static $table = '';
+    CONST TABLE = '';
 
     public static $connection = 'default';
     
@@ -31,10 +31,18 @@ class Base
      */
     public static function find($data){
         return Db::init(static::$connection)->find([
-            'table' => static::$table,
+            'table' => static::TABLE,
             'where' => $data,
             'limit' => 1
         ]);
+    }
+
+    /**
+     * @param array $data
+     * @return mixed
+     */
+    public static function findById($id){
+        return self::find(['id' => $id]);
     }
 
     /**
@@ -43,9 +51,33 @@ class Base
      */
     public static function findAll($data = []){
         return Db::init(static::$connection)->findAll($data + [
-            'table' => static::$table,
+            'table' => static::TABLE,
             'limit' => 10
         ]);
+    }
+
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    public static function findAllAndCount($data = []){
+        $arr = self::findAll($data);
+        $rows = self::count($data['where']);
+        return [$arr,$rows];
+    }
+
+    /**
+     * @param $data
+     * @return mixed
+     */
+    public static function count($data){
+        $res = Db::init(static::$connection)->find([
+            'table' => static::TABLE,
+            'field' => 'count(*) as rows',
+            'where' => $data
+        ]);
+        return $res['rows'];
     }
 
     /**
@@ -54,7 +86,7 @@ class Base
      */
     public static function delete($data){
         return Db::init(static::$connection)->delete([
-            'table' => static::$table,
+            'table' => static::TABLE,
             'where' => $data
         ]);
     }
@@ -65,19 +97,45 @@ class Base
      */
     public static function insert($data){
         return Db::init(static::$connection)->insert([
-            'table' => static::$table,
+            'table' => static::TABLE,
             'data' => $data
         ]);
     }
 
     /**
      * @param array $data
+     * @param array $where
      * @return mixed
      */
-    public static function update($data){
-        return Db::init(static::$connection)->update($data + [
-            'table' => static::$table,
+    public static function update($data,$where){
+        return Db::init(static::$connection)->update([
+            'table' => static::TABLE,
+            'where' => $where,
+            'data' => $data
         ]);
+    }
+
+    /**
+     * @return array
+     */
+    public static function getField(){
+        $arr =  Db::init(static::$connection)->getDbField();
+        return $arr[static::TABLE];
+    }
+
+    /**
+     * @param array $data
+     * @param bool $is_allow_empty
+     */
+    public static function filterData($data,$is_allow_empty = false){
+        $fields = self::getField();
+        $r = [];
+        foreach ($data as $k => $v){
+            if(isset($fields[$k]) && ($is_allow_empty || $data[$k])){
+                $r[$k] = $v;
+            }
+        }
+        return $r;
     }
 
 }
