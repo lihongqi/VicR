@@ -5,7 +5,7 @@
 
 >测了一下路由消耗时间`1ms`左右(第一次执行会生成映射关系 Router::$info; Router::$as_info; )。对比了一下 fastroute ，fastroute需要`20ms`左右。
 
->空间名、类名大驼峰；方法名小驼峰
+>PSR-4 规范
 
 ## 路由 Router
 
