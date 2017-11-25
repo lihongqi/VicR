@@ -53,15 +53,16 @@ class Funcs
      * @param string $prefix
      * @return string
      */
-    public static function uuid($prefix = ''){
-        $str = uniqid('',true);
-        $arr = explode('.',$str);
-        $str = $prefix.base_convert($arr[0],16,36).base_convert($arr[1],10,36).base_convert(bin2hex(random_bytes(5)),16,36);
+    public static function uuid($prefix = '')
+    {
+        $str = uniqid('', true);
+        $arr = explode('.', $str);
+        $str = $prefix . base_convert($arr[0], 16, 36) . base_convert($arr[1], 10, 36) . base_convert(bin2hex(random_bytes(5)), 16, 36);
         $len = 24;
-        $str = substr($str,0,$len);
-        if(strlen($str) < $len){
-            $mt = base_convert(bin2hex(random_bytes(5)),16,36);
-            $str = $str.substr($mt,0,$len - strlen($str));
+        $str = substr($str, 0, $len);
+        if (strlen($str) < $len) {
+            $mt = base_convert(bin2hex(random_bytes(5)), 16, 36);
+            $str = $str . substr($mt, 0, $len - strlen($str));
         }
         return $str;
     }
@@ -72,15 +73,16 @@ class Funcs
      * @param null $allow_tags
      * @return string
      */
-    public static function filterXss($str,$allow_tags = null){
-        $str=strip_tags($str,$allow_tags);
-        if($allow_tags !== null){
-            while (true){
+    public static function filterXss($str, $allow_tags = null)
+    {
+        $str = strip_tags($str, $allow_tags);
+        if ($allow_tags !== null) {
+            while (true) {
                 $l = strlen($str);
-                $str = preg_replace('/(<[^>]+?)(on[a-z]+)([^<>]+>)/i','$1$3',$str);
-                $str = preg_replace('/(<[^>]+?)(javascript\:)([^<>]+>)/i','$1$3',$str);
-                if(strlen($str) == $l){
-                    break ;
+                $str = preg_replace('/(<[^>]+?)(on[a-z]+)([^<>]+>)/i', '$1$3', $str);
+                $str = preg_replace('/(<[^>]+?)(javascript\:)([^<>]+>)/i', '$1$3', $str);
+                if (strlen($str) == $l) {
+                    break;
                 }
             }
         }
@@ -96,42 +98,44 @@ class Funcs
      * @param int $show_page_max
      * @return string
      */
-    public static function page($total_row,$page_row,$show_page,$page = 1,$temp=[],$show_page_max=100){
-        if(empty($temp)){
-            $url=Request::uri().'?page=';
-            $temp=array(
-                '<a href="'.$url.'{i}" class="pure-button">上一页</a>',
+    public static function page($total_row, $page_row, $show_page, $page = 1, $temp = [], $show_page_max = 100)
+    {
+        if (empty($temp)) {
+            $url = Request::uri() . '?page=';
+            $temp = array(
+                '<a href="' . $url . '{i}" class="pure-button">上一页</a>',
                 '<a class="pure-button pure-button-active">{i}</a>',
-                '<a href="'.$url.'{i}" class="pure-button">下一页</a>',
-                '<a href="'.$url.'{i}" class="pure-button">{i}</a>'
+                '<a href="' . $url . '{i}" class="pure-button">下一页</a>',
+                '<a href="' . $url . '{i}" class="pure-button">{i}</a>'
             );
         }
-        $s='';
-        $pages=ceil($total_row/$page_row);
-        if($show_page && $pages >$show_page_max){
-            $pages=$show_page_max;
+        $s = '';
+        $pages = ceil($total_row / $page_row);
+        if ($show_page && $pages > $show_page_max) {
+            $pages = $show_page_max;
         }
-        if($page>1){
-            $s.=str_replace('{i}',$page-1,$temp[0]);
+        if ($page > 1) {
+            $s .= str_replace('{i}', $page - 1, $temp[0]);
         }
-        if($page-$show_page > 1){
-            $s.=str_replace('{i}',1,$temp[3]).'…';
+        if ($page - $show_page > 1) {
+            $s .= str_replace('{i}', 1, $temp[3]) . '…';
         }
-        $zxid=$page-$show_page<1?1:$page-$show_page;
-        for($i=$page;$i>$zxid;$i--){}
-        for(;$i<$page;$i++){
-            $s.=str_replace('{i}',$i,$temp[3]);
+        $zxid = $page - $show_page < 1 ? 1 : $page - $show_page;
+        for ($i = $page; $i > $zxid; $i--) {
         }
-        $s.=str_replace('{i}',$page,$temp[1]);
-        $zuid=$page+$show_page>$pages?$pages:$page+$show_page;
-        for($i=($page+1);$i<($zuid+1);$i++){
-            $s.=str_replace('{i}',$i,$temp[3]);
+        for (; $i < $page; $i++) {
+            $s .= str_replace('{i}', $i, $temp[3]);
         }
-        if($page+$show_page < $pages){
-            $s.='…'.str_replace('{i}',$pages,$temp[3]);
+        $s .= str_replace('{i}', $page, $temp[1]);
+        $zuid = $page + $show_page > $pages ? $pages : $page + $show_page;
+        for ($i = ($page + 1); $i < ($zuid + 1); $i++) {
+            $s .= str_replace('{i}', $i, $temp[3]);
         }
-        if($page<$pages){
-            $s.=str_replace('{i}',$page+1,$temp[2]);
+        if ($page + $show_page < $pages) {
+            $s .= '…' . str_replace('{i}', $pages, $temp[3]);
+        }
+        if ($page < $pages) {
+            $s .= str_replace('{i}', $page + 1, $temp[2]);
         }
         return $s;
     }

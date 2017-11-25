@@ -34,7 +34,7 @@ class App
         $key = md5(__FILE__);
         $time = filemtime(VIC_APP_PATH.'/Config/Router.php');
         $info  = Cache\File::get($key.$time);
-        if($info && false){
+        if($info){
             Router::$info  = $info;
             Router::$as_info = Cache\File::get($key.'_as'.$time);
         }else{

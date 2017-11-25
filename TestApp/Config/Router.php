@@ -6,10 +6,6 @@
  * Time: 下午4:20
  */
 
-Router::get('/name','\Controller\\Test@name');
-Router::get('/name/{name}','\Controller\\Test@name');
-Router::get('/articles/{id}/{title}','\Controller\\Test@topic');
-
-for ($i=0; $i < 1000 ; $i++) {
-    Router::get('/abc'.$i,'\Controller\\Test@name');
+for ($i=0;$i<10000;$i++) {
+    Router::get('/name/{user}/'.$i, '\\Controller\\Test@name');
 }
