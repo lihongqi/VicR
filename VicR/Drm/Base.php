@@ -63,6 +63,9 @@ class Base
      */
     public static function findAllAndCount($data = []){
         $arr = self::findAll($data);
+        if(!isset($data['where'])){
+            $data['where'] = [];
+        }
         $rows = self::count($data['where']);
         return [$arr,$rows];
     }
@@ -107,7 +110,11 @@ class Base
      * @param array $where
      * @return mixed
      */
-    public static function update($data,$where){
+    public static function update($data,$where = []){
+        if(!$where){
+            $where = ['id' => $data['id']];
+            unset($data['id']);
+        }
         return Db::init(static::$connection)->update([
             'table' => static::TABLE,
             'where' => $where,
@@ -131,7 +138,7 @@ class Base
         $fields = self::getField();
         $r = [];
         foreach ($data as $k => $v){
-            if(isset($fields[$k]) && ($is_allow_empty || $data[$k])){
+            if(isset($fields[$k]) && ($is_allow_empty || $data[$k] != '')){
                 $r[$k] = $v;
             }
         }

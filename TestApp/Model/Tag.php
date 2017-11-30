@@ -13,7 +13,7 @@ use Drm\Base;
 
 class Tag extends Base
 {
-    public static $table = 'd_tag';
+    CONST TABLE = 'd_tag';
 
     public static function getList($id)
     {

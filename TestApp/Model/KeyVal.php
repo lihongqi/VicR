@@ -13,5 +13,5 @@ use Drm\Base;
 
 class KeyVal extends Base
 {
-    public static $table = 'd_kv';
+    CONST TABLE = 'd_kv';
 }

@@ -18,6 +18,10 @@ class Router
 
     public static $uri = '';
 
+    public static $class = '';
+
+    public static $method = '';
+
     /**
      * @return array
      */
@@ -137,12 +141,13 @@ class Router
     {
         $fm = self::getAction();
         $act = is_array($fm[0]) ? $fm[0]['use'] : $fm[0];
+        list(self::$class,self::$method) = explode('@',$act);
         $r = [];
         foreach ($fm as $i => $v) {
             if ($i > 0) {
-                $r[] = function ($handler) use ($v, $act) {
-                    return function () use ($v, $act, $handler) {
-                        return App::call($v, [$handler, $act]);
+                $r[] = function ($handler) use ($v) {
+                    return function () use ($v, $handler) {
+                        return App::call($v, [$handler]);
                     };
                 };
             }
@@ -278,7 +283,7 @@ class Router
     private static function createAsInfo($path, $action)
     {
         if (isset($action['as'])) {
-            self::$as_info[$action['as']] = $path;
+            self::$as_info[$action['as']] = rtrim($path,'/');
         }
     }
 
