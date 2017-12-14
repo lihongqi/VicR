@@ -77,6 +77,17 @@ class Request
     }
 
     /**
+     * @param int $i
+     * @return mixed|null
+     */
+    public static function arg($i)
+    {
+        global $argv;
+        return Funcs::array_get($argv, $i);
+    }
+
+
+    /**
      * @param $key
      * @return mixed|null
      */

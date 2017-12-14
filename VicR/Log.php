@@ -16,10 +16,11 @@ class Log
     /**
      * @param $data
      * @param int $k
+     * @param $prefix
      */
-    public static function debug($data, $k = 0)
+    public static function debug($data, $k = 0, $prefix = 'debug')
     {
-        self::_log($data, $k + 1);
+        self::_log($data, $k + 1, 3, $prefix);
     }
 
     /**
@@ -28,7 +29,7 @@ class Log
      */
     public static function notice($data, $k = 0)
     {
-        self::_log($data, $k + 1, 2);
+        self::_log($data, $k + 1, 2, 'notice');
     }
 
     /**
@@ -37,7 +38,7 @@ class Log
      */
     public static function warn($data, $k = 0)
     {
-        self::_log($data, $k + 1, 1);
+        self::_log($data, $k + 1, 1, 'warn');
     }
 
     /**
@@ -46,7 +47,7 @@ class Log
      */
     public static function error($data, $k = 0)
     {
-        self::_log($data, $k + 1, 0);
+        self::_log($data, $k + 1, 0, 'error');
     }
 
 
@@ -61,7 +62,7 @@ class Log
         if (is_string($data)) {
             $data = str_replace("\n", ' ', $data);
         } else {
-            $data = json_encode($data,JSON_UNESCAPED_UNICODE);
+            $data = json_encode($data, JSON_UNESCAPED_UNICODE);
         }
 
 

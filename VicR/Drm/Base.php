@@ -14,27 +14,41 @@ class Base
     CONST TABLE = '';
 
     public static $connection = 'default';
+
+    protected static $with_info = [];
     
     /**
      * @param $field
      * @param $sign
      * @param $val
-     * @return Db
      */
     public static function where($field, $sign, $val){
-        return Db::init(static::$connection)->where($field,$sign,$val);
+        Db::init(static::$connection)->where($field,$sign,$val);
     }
+
+
+    /**
+     * @param $key
+     */
+    public static function with($key){
+        Db::init(static::$connection)->with($key,static::$with_info[$key]);
+    }
+
 
     /**
      * @param array $data
      * @return mixed
      */
-    public static function find($data){
-        return Db::init(static::$connection)->find([
+    public static function find($data = [],$order = null){
+        $info = [
             'table' => static::TABLE,
             'where' => $data,
             'limit' => 1
-        ]);
+        ];
+        if($order){
+            $info['order'] = $order;
+        }
+        return Db::init(static::$connection)->find($info);
     }
 
     /**

@@ -17,9 +17,20 @@ class Control
 
     protected $base_tpl = '';
 
+    protected $page_size = 20;
+
     public function __construct()
     {
+
     }
+
+    protected function getLimit($max_page = 100)
+    {
+        $page = \Request::get('page', 1);
+        $page = min($page, $max_page);
+        return ($page - 1) * $this->page_size . ',' . $this->page_size;
+    }
+
 
     public function __destruct()
     {
@@ -58,12 +69,12 @@ class Control
     protected function verify($fields, $data)
     {
         foreach ($fields as $k => $v) {
-            if(is_numeric($k)){
+            if (is_numeric($k)) {
                 $k = $v;
             }
-            $val = Funcs::array_get($data,$k);
+            $val = Funcs::array_get($data, $k);
             if ($val == null && $val == '') {
-                throw (new \Except\Error("{$v}不能为空"))->setTime(5)->back();
+                throw (new \Except\Error("{$v}不能为空", 4001))->setTime(5)->back();
             }
         }
     }
@@ -79,17 +90,4 @@ class Control
         return \Response::tpl($this->base_tpl, $data);
     }
 
-    /**
-     * @param string $tpl
-     * @param array $data
-     */
-    protected function tpl($data = [] , $tpl = '')
-    {
-        if($tpl == ''){
-            $tpl = Router::$class.'/'.Router::$method;
-        }
-        $tpl = str_replace('\\','/',$tpl);
-        $tpl = trim($tpl,'/');
-        return \Response::tpl($tpl, $data);
-    }
 }

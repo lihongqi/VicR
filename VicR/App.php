@@ -25,8 +25,6 @@ class App
             return require_once(VIC_APP_PATH . '/' . $path . '.php');
         } else if (file_exists(VIC_CORE_PATH . '/' . $path . '.php')) {
             return require_once(VIC_CORE_PATH . '/' . $path . '.php');
-        } else {
-            exit('没有找到文件:' . $path);
         }
     }
 

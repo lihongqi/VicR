@@ -17,22 +17,38 @@ class Test
 {
     public function hello($name)
     {
-        return 'hello ' . $name."\n";
+        return 'hello ' . $name;
     }
 
-
-    public function name($i){
-        echo (microtime(true) - \App::$start_time) * 1000 , PHP_EOL;
-        echo $i;
-    }
-
-
-
-
-    public function csrf($next)
+    public function router()
     {
-        echo __METHOD__."\n";
-        return $next();
+        return json_encode([\Router::$info,\Router::$as_info]);
     }
+
+    public function index()
+    {
+        return 'Welcome to use';
+    }
+
+    public function blog($id)
+    {
+        return __METHOD__ . ' arg:' . $id;
+    }
+
+    public function cache()
+    {
+        return date('Y-m-d H:i:s');
+    }
+
+    public function login()
+    {
+        return \Response::tpl('Test/Login', ['title' => 'login']);
+    }
+
+    public function into()
+    {
+
+    }
+
 
 }

@@ -14,7 +14,118 @@
 内置了restful 7个方法，可以支持任意方法，自己加一行代码就可以了。
 
 ### demo
+
+```php
+
+Router::group([
+    'namespace' => 'Controller'
+], function () {
+
+    Router::get('/', 'Test@index');
+
+    // {name} 通用匹配
+    Router::get('/hello/{name}', 'Test@hello');
+
+    //{id} 匹配数字
+    Router::get('/blog/{id}', 'Test@blog');
+
+    // 缓存 10秒
+    Router::get('/cache', [
+        'use' => 'Test@cache',
+        'cache' => [
+            'time' => 10 //10s
+        ]
+    ]);
+
+    //中间件csrf 
+    Router::group([
+        'middle' => [\Middle\Safe::class . '@csrfSetSign'],
+    ], function () {
+        Router::get('/login', 'Test@login');
+    });
+
+    Router::post('/login', [
+        'use' => 'Test@into',
+        'as' => 'login.into',
+        'middle' => [\Middle\Safe::class . '@csrfVerifySign']
+    ]);
+
+
+});
+
+```
+
+上面这个路由会生成如下缓存，下次请求如果文件没有修改会直接使用缓存的信息 
+ 
+```json
+[
+    {
+        "get": {
+            "0": {
+                "use": "\\Controller\\Test@index",
+                "middle": []
+            },
+            "router": [
+                {
+                    "use": "\\Controller\\Test@router",
+                    "middle": []
+                }
+            ],
+            "hello": {
+                "{name}": [
+                    {
+                        "use": "\\Controller\\Test@hello",
+                        "middle": []
+                    }
+                ]
+            },
+            "blog": {
+                "{id}": [
+                    {
+                        "use": "\\Controller\\Test@blog",
+                        "middle": []
+                    }
+                ]
+            },
+            "cache": [
+                {
+                    "use": "\\Controller\\Test@cache",
+                    "cache": {
+                        "time": 10
+                    }
+                }
+            ],
+            "login": [
+                {
+                    "use": "\\Controller\\Test@login",
+                    "middle": [
+                        "Middle\\Safe@csrfSetSign"
+                    ]
+                }
+            ]
+        },
+        "post": {
+            "login": [
+                {
+                    "use": "\\Controller\\Test@into",
+                    "as": "login.into",
+                    "middle": [
+                        "Middle\\Safe@csrfVerifySign"
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "login.into": "/login"
+    }
+]
+
+```
+
 #### get put post delete patch head options
+
+
 ```php
 Router::get('/user','User@xxx');
 
@@ -31,7 +142,7 @@ Router::get('/user/{name}','User@getUserInfoByName);
 Router::get('/user/`^\w{2,4}$`','User@getUserInfoByVipName');
 
 //第二个参数为数组情况 。 
-//  as：增加个别名home ，调用 Funcs::url('home') 返回 /user/home ; 
+//  as：增加个别名home ，调用 Response::getUrl('home') 返回 /user/home ; 
 //  middle：中间件 ； 中间件数组 从左到右 从外到里(group可以包在多个路由外面) 依次执行，任何一个中间件阻断了 后面的就都不会被执行了（常用来权限认证，数据加解密，接口合并…… )
 //  cache：缓存 ，在缓存时间内不会执行User@getUserInfoByName直接返回上一次执行结果，会执行中间件。
 Router::get('/user/home',[

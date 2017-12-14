@@ -64,6 +64,9 @@ class Response
             $key = array_map(function ($v) {
                 return '{' . $v . '}';
             }, array_keys($data));
+            $data = array_map(function ($v){
+                return urlencode($v);
+            },$data);
             $url = str_replace($key, array_values($data), $url);
         }
         if ($csrf) {

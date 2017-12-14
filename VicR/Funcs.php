@@ -117,7 +117,7 @@ class Funcs
         if ($page > 1) {
             $s .= str_replace('{i}', $page - 1, $temp[0]);
         }
-        if ($page - $show_page > 1) {
+        if ($page - $show_page > 1 && $show_page) {
             $s .= str_replace('{i}', 1, $temp[3]) . '…';
         }
         $zxid = $page - $show_page < 1 ? 1 : $page - $show_page;
@@ -131,7 +131,7 @@ class Funcs
         for ($i = ($page + 1); $i < ($zuid + 1); $i++) {
             $s .= str_replace('{i}', $i, $temp[3]);
         }
-        if ($page + $show_page < $pages) {
+        if ($page + $show_page < $pages && $show_page) {
             $s .= '…' . str_replace('{i}', $pages, $temp[3]);
         }
         if ($page < $pages) {

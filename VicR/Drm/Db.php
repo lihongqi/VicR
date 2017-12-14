@@ -28,14 +28,6 @@ class Db
 
     }
 
-    /**
-     * @param \PDOStatement $PDOStatement
-     * @return mixed
-     */
-    private function fetch($PDOStatement)
-    {
-        return $PDOStatement->fetch(\PDO::FETCH_ASSOC);
-    }
 
     /**
      * @return string
@@ -87,12 +79,74 @@ class Db
     }
 
     /**
+     * @var array [
+     *    key => ['self.field',table,table.field,data]
+     * ]
+     */
+    private $_with = [];
+
+    public function with($key, $with)
+    {
+        if (!isset($with[3])) {
+            $with[3] = [];
+        }
+        $this->_with[$key] = $with;
+    }
+
+    private function getWith($data)
+    {
+        $with = $this->_with;
+        $this->_with = [];
+        foreach ($with as $k => $v) {
+            $r = [];
+            foreach ($data as $val) {
+                $r[] = $val[$v[0]];
+            }
+            $r = array_unique($r);
+            $this->where($v[2], 'in', $r);
+            $arr = $this->findAll([
+                    'table' => $v[1]
+                ] + $v[3]);
+            $r = [];
+            foreach ($arr as $l) {
+                $r[$l[$v[2]]] = $l;
+            }
+            foreach ($data as $ka => $val) {
+                $data[$ka][$k] = $r[$val[$v[0]]];
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * @param \PDOStatement $PDOStatement
+     * @return mixed
+     */
+    private function fetch($PDOStatement)
+    {
+        $res = $PDOStatement->fetch(\PDO::FETCH_ASSOC);
+        if ($this->_with && $res) {
+            $res = $this->getWith([$res]);
+            $res = $res[0];
+        }
+        return $res;
+    }
+
+    /**
      * @param \PDOStatement $PDOStatement
      * @return array
      */
     private function fetchAll($PDOStatement)
     {
-        return $PDOStatement->fetchAll(\PDO::FETCH_ASSOC);
+        $res = $PDOStatement->fetchAll(\PDO::FETCH_ASSOC);
+        if ($this->_with) {
+            if($res){
+                $res = $this->getWith($res);
+            }else{
+                $this->_with = [];
+            }
+        }
+        return $res;
     }
 
     /**
@@ -141,7 +195,7 @@ class Db
      */
     private function execute($sql, $arr = [])
     {
-        \Log::debug([$sql, $arr], 4);
+//        \Log::debug([$sql, $arr], 4);
         if ($arr) {
             $this->sql_data = $this->whs = [];
             if (!isset($arr[0])) {
@@ -153,10 +207,15 @@ class Db
             if ($pt->execute($arr)) {
                 return $pt;
             } else {
-                throw new \Except\DbError('execute failed ' . $sql . ' ' . json_encode($arr));
+                throw new \Except\DbError('execute failed ' . $sql . ' ' . json_encode($arr, JSON_UNESCAPED_UNICODE));
             }
         } else {
-            return $this->getPdo()->query($sql);
+            $res = $this->getPdo()->query($sql);
+            if($res){
+                return $res;
+            }else{
+                throw new \Except\DbError('execute failed ' . $sql . ' ' . json_encode($arr, JSON_UNESCAPED_UNICODE));
+            }
         }
     }
 
@@ -315,13 +374,23 @@ class Db
     /**
      * @param string $field
      * @param string $sign
-     * @param string $val
+     * @param string|array $val
      * @return $this
      */
     public function where($field, $sign, $val)
     {
-        $this->sql_data[] = $val;
-        $this->whs = array_merge($this->whs, [$field . ' ' . $sign . ' ' . '?']);
+        $sign = strtolower($sign);
+        if ($sign == 'in' || $sign == 'not in') {
+            $h = [];
+            foreach ($val as $v) {
+                $this->sql_data[] = $v;
+                $h[] = '?';
+            }
+            $this->whs = array_merge($this->whs, [$field . ' ' . $sign . ' ' . '(' . implode(',', $h) . ')']);
+        } else {
+            $this->sql_data[] = $val;
+            $this->whs = array_merge($this->whs, [$field . ' ' . $sign . ' ' . '?']);
+        }
         return $this;
     }
 
@@ -394,9 +463,9 @@ class Db
         static $dbs = [];
 
         if (isset($dbs[$key])) {
-            if($dbs[$key]->start_time + $dbs[$key]->max_connect_time > time()){
+            if ($dbs[$key]->start_time + $dbs[$key]->max_connect_time > time()) {
                 return $dbs[$key];
-            }else{
+            } else {
                 unset($dbs[$key]);
             }
         }
@@ -420,7 +489,7 @@ class Db
         try {
             $db = new \PDO($conf['dns'], $conf['username'], $conf['password'], $conf['ops']);
         } catch (\PDOException $e) {
-            throw new \Except\DbError('connection failed dns:' . $key);
+            throw new \Except\DbError('connection failed dns:' . $key.' '.$e->getMessage());
         }
         $ot = new self;
         $ot->pdo = $db;
@@ -431,27 +500,28 @@ class Db
     /**
      * 生成表结构缓存
      */
-    private function createDbFieldCache(){
+    private function createDbFieldCache()
+    {
         $db = self::init();
         $tables = $db->findAll('show tables');
         $rr = [];
-        foreach($tables as $v){
+        foreach ($tables as $v) {
             $table = end($v);
-            $res =  $db->findAll("desc $table");
+            $res = $db->findAll("desc $table");
             $fr = array();
-            foreach($res as $fv){
-                $pos = strpos($fv['Type'],'(');
-                if(!$pos){
-                    $pos = strpos($fv['Type'],' ');
+            foreach ($res as $fv) {
+                $pos = strpos($fv['Type'], '(');
+                if (!$pos) {
+                    $pos = strpos($fv['Type'], ' ');
                 }
-                if($pos){
-                    $type = substr($fv['Type'],0,$pos);
-                }else{
+                if ($pos) {
+                    $type = substr($fv['Type'], 0, $pos);
+                } else {
                     $type = $fv['Type'];
                 }
                 $fr[$fv['Field']] = $type;
             }
-            $rr[$table]=$fr;
+            $rr[$table] = $fr;
         }
         return $rr;
     }
@@ -461,12 +531,13 @@ class Db
     /**
      * @return array
      */
-    public function getDbField($fresh_cache = false){
-        if(!self::$fields){
+    public function getDbField($fresh_cache = false)
+    {
+        if (!self::$fields) {
             $res = \Cache\File::get('db_field');
-            if($res == false || $fresh_cache == true){
+            if ($res == false || $fresh_cache == true) {
                 $res = $this->createDbFieldCache();
-                File::set('db_field',$res,36000);
+                File::set('db_field', $res, 36000);
             }
             self::$fields = $res;
         }
