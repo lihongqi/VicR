@@ -182,7 +182,7 @@ function(){
 
 ## 数据操作 
 
-```
+``php`
     Blog::find([
         'id' => 1,
         'star' => 0
