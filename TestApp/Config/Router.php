@@ -12,8 +12,10 @@ Router::group([
 
     Router::get('/', 'Test@index');
 
+    Router::get('/drm', 'Test@drm');
+
     //打印出路由缓存信息
-    Router::get('router', 'Test@router');
+    Router::get('/router', 'Test@router');
 
     // {name} 通用匹配
     Router::get('/hello/{name}', 'Test@hello');

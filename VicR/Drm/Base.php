@@ -16,15 +16,6 @@ class Base
     public static $connection = 'default';
 
     protected static $with_info = [];
-    
-    /**
-     * @param $field
-     * @param $sign
-     * @param $val
-     */
-    public static function where($field, $sign, $val){
-        Db::init(static::$connection)->where($field,$sign,$val);
-    }
 
 
     /**

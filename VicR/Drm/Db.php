@@ -85,10 +85,14 @@ class Db
      */
     private $_with = [];
 
+    /**
+     * @param string $key
+     * @param array $with [table,self_link_key,link_key,ops,[next=[with]]]
+     */
     public function with($key, $with)
     {
-        if (!isset($with[3])) {
-            $with[3] = [];
+        if (!isset($with['ops'])) {
+            $with['ops'] = [];
         }
         $this->_with[$key] = $with;
     }
@@ -98,23 +102,45 @@ class Db
         $with = $this->_with;
         $this->_with = [];
         foreach ($with as $k => $v) {
-            $r = [];
-            foreach ($data as $val) {
-                $r[] = $val[$v[0]];
-            }
-            $r = array_unique($r);
-            $this->where($v[2], 'in', $r);
-            $arr = $this->findAll([
-                    'table' => $v[1]
-                ] + $v[3]);
-            $r = [];
-            foreach ($arr as $l) {
-                $r[$l[$v[2]]] = $l;
-            }
-            foreach ($data as $ka => $val) {
-                $data[$ka][$k] = $r[$val[$v[0]]];
+            $data = $this->getWithData($data, $v, $k);
+        }
+        return $data;
+    }
+
+    private function getWithData($data, $with, $field)
+    {
+        $ids = [];
+        foreach ($data as $val) {
+            $ids[] = $val[$with['self_link_key']];
+        }
+
+        $with['ops']['where'][] = [$with['link_key'], 'in', $ids];
+        $arr = $this->findAll([
+                'table' => $with['table']
+            ] + $with['ops']);
+
+        if (isset($with['next'])) {
+            $arr = $this->getWithData($arr, $with['next'], 'next');
+        }
+
+        $ar = [];
+        foreach ($arr as $v) {
+            if (isset($with['multi'])) {
+                $ar[$v[$with['link_key']]][] = $v;
+            } else {
+                $ar[$v[$with['link_key']]] = $v;
             }
         }
+
+        foreach ($data as &$val) {
+            if (isset($ar[$val[$with['self_link_key']]])) {
+                $val[$field] = $ar[$val[$with['self_link_key']]];
+            } else {
+                $val[$field] = null;
+                \Log::warn("关联不存在 {$with['self_link_key']} => {$val[$with['self_link_key']]}");
+            }
+        }
+
         return $data;
     }
 
@@ -140,9 +166,9 @@ class Db
     {
         $res = $PDOStatement->fetchAll(\PDO::FETCH_ASSOC);
         if ($this->_with) {
-            if($res){
+            if ($res) {
                 $res = $this->getWith($res);
-            }else{
+            } else {
                 $this->_with = [];
             }
         }
@@ -211,9 +237,9 @@ class Db
             }
         } else {
             $res = $this->getPdo()->query($sql);
-            if($res){
+            if ($res) {
                 return $res;
-            }else{
+            } else {
                 throw new \Except\DbError('execute failed ' . $sql . ' ' . json_encode($arr, JSON_UNESCAPED_UNICODE));
             }
         }
@@ -335,14 +361,22 @@ class Db
     {
         $s = '';
         foreach ($ar as $k => $v) {
-            $s .= ' LEFT JOIN ' . $k . ' on ' . $v;
+            $s .= ' LEFT JOIN ' . $this->_table($k) . ' on ' . $v;
         }
         return $s;
     }
 
     private function _table($str)
     {
-        return ' `' . $str . '` ';
+        $r = explode(' ', $str);
+        $r = array_filter($r, function ($v) {
+            if ($v) {
+                return $v;
+            }
+        });
+        $table = $r[0];
+        unset($r[0]);
+        return ' `' . $table . '` ' . implode(' ', $r);
     }
 
     /**
@@ -351,34 +385,37 @@ class Db
      */
     private function _where($data)
     {
-        if (isset($data[0])) {
-            $ws = [];
-            foreach ($data as $w) {
-                $ws[] = $this->_data($w, ' AND ');
+        $w = [];
+        foreach ($data as $k => $v) {
+            if (is_numeric($k)) {
+                if(isset($v[0])){
+                    $w[] = $this->where($v[0],$v[1],$v[2]);
+                }else{
+                    $w[] = '(' . $this->_data($v, ' OR ') . ')';
+                }
+                unset($data[$k]);
             }
-            $where = '(' . implode(' OR ', $ws) . ')';
-        } else {
-            $where = $this->_data($data, ' AND ');
         }
-        $whs = implode(' AND ', $this->whs);
-        if ($whs && $where) {
-            return ' WHERE ' . $whs . ' AND ' . $where;
-        } else if ($whs || $where) {
-            return ' WHERE ' . $whs . $where;
+        if($data){
+            $w[] = $this->_data($data,' AND ');
         }
-        return '';
-    }
+        $where = implode(' AND ',$w);
+        if($where){
+            return ' WHERE '.$where;
+        }
+        return  '';
 
-    private $whs = [];
+    }
 
     /**
      * @param string $field
      * @param string $sign
      * @param string|array $val
-     * @return $this
+     * @return string
      */
-    public function where($field, $sign, $val)
+    private function where($field, $sign, $val)
     {
+        $whs = [];
         $sign = strtolower($sign);
         if ($sign == 'in' || $sign == 'not in') {
             $h = [];
@@ -386,12 +423,12 @@ class Db
                 $this->sql_data[] = $v;
                 $h[] = '?';
             }
-            $this->whs = array_merge($this->whs, [$field . ' ' . $sign . ' ' . '(' . implode(',', $h) . ')']);
+            $whs = $field . ' ' . $sign . ' ' . '(' . implode(',', $h) . ')';
         } else {
             $this->sql_data[] = $val;
-            $this->whs = array_merge($this->whs, [$field . ' ' . $sign . ' ' . '?']);
+            $whs = $field . ' ' . $sign . ' ' . '?';
         }
-        return $this;
+        return $whs;
     }
 
     private function _order($str)
@@ -489,7 +526,7 @@ class Db
         try {
             $db = new \PDO($conf['dns'], $conf['username'], $conf['password'], $conf['ops']);
         } catch (\PDOException $e) {
-            throw new \Except\DbError('connection failed dns:' . $key.' '.$e->getMessage());
+            throw new \Except\DbError('connection failed dns:' . $key . ' ' . $e->getMessage());
         }
         $ot = new self;
         $ot->pdo = $db;

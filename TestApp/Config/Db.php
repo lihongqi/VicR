@@ -7,7 +7,7 @@
  */
 $Db = [
     'default' => [
-        'dns' => 'mysql:host=127.0.0.1;dbname=lzcdy',
+        'dns' => 'mysql:host=127.0.0.1;dbname=vicblog',
         'username' => 'root',
         'password' => '123456',
         'ops' => [
